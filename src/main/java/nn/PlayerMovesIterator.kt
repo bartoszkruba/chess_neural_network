@@ -1,3 +1,5 @@
+package nn
+
 import com.github.bhlangonijr.chesslib.*
 import org.apache.commons.io.FileUtils
 import org.nd4j.linalg.dataset.DataSet
