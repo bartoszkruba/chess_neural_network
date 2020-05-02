@@ -99,7 +99,7 @@ class ResidualNetworkBuilder(
                 .build(), convName)
         conf.addLayer(actName, ActivationLayer.Builder()
                 // todo try changing to Softmax instead
-                .activation(Activation.RELU)
+                .activation(Activation.SOFTMAX)
                 .build(), bnName)
         conf.addLayer(denseName, OutputLayer.Builder()
                 // number inputs: two planes with size 8x8

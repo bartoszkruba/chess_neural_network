@@ -10,7 +10,7 @@ import java.io.File
 
 class PlayerMovesIterator(private val filePath: String, val batchSize: Int) : DataSetIterator {
 
-    private val cursor = 1
+    private var cursor = 1
     private val file = File(filePath)
     private var fileIterator = FileUtils.lineIterator(file)
     private val totalExamples: Int
@@ -28,6 +28,7 @@ class PlayerMovesIterator(private val filePath: String, val batchSize: Int) : Da
         var examples = 0
         file.forEachLine { examples++ }
         totalExamples = examples
+        println("total examples: $totalExamples")
     }
 
     override fun resetSupported(): Boolean {
@@ -71,6 +72,7 @@ class PlayerMovesIterator(private val filePath: String, val batchSize: Int) : Da
         val labels = Nd4j.zeros(n, 64 * 63)
 
         for (example in 0 until n) {
+            this.cursor++
             val line = fileIterator.nextLine().split(",")
             val color = line[1]
             val fen = line[2]
@@ -107,7 +109,7 @@ class PlayerMovesIterator(private val filePath: String, val batchSize: Int) : Da
         fileIterator = FileUtils.lineIterator(file)
     }
 
-    override fun hasNext(): Boolean = fileIterator.hasNext()
+    override fun hasNext(): Boolean = cursor < (totalExamples - batchSize)
 
     override fun asyncSupported(): Boolean {
         return true

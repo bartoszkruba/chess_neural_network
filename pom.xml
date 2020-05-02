@@ -76,6 +76,12 @@
         <!--            <artifactId>deeplearning4j-cuda-10.1</artifactId>-->
         <!--            <version>1.0.0-beta6</version>-->
         <!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.25</version>
+        </dependency>
     </dependencies>
 
     <build>
