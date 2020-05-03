@@ -8,7 +8,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 import java.io.File
 
-class PlayerMovesIterator(private val filePath: String, val batchSize: Int) : DataSetIterator {
+class PlayerMovesIteratorVersion1(private val filePath: String, val batchSize: Int) : DataSetIterator {
 
     private var cursor = 1
     private val file = File(filePath)
@@ -118,5 +118,4 @@ class PlayerMovesIterator(private val filePath: String, val batchSize: Int) : Da
     override fun getPreProcessor(): DataSetPreProcessor {
         throw UnsupportedOperationException("Not implemented")
     }
-
 }

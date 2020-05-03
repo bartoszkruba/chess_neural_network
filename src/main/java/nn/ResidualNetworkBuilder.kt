@@ -12,15 +12,17 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
+import org.nd4j.linalg.learning.config.Adam
 import org.nd4j.linalg.learning.config.Sgd
 
 class ResidualNetworkBuilder(
         private val kernel: IntArray = intArrayOf(3, 3),
         private val strides: IntArray = intArrayOf(1, 1),
-        private val convolutionMode: ConvolutionMode = ConvolutionMode.Same
+        private val convolutionMode: ConvolutionMode = ConvolutionMode.Same,
+        private val learningRate: Double = 0.001
 ) {
     private val conf = NeuralNetConfiguration.Builder()
-            .updater(Sgd())
+            .updater(Adam(learningRate))
             .weightInit(WeightInit.LECUN_NORMAL)
             .graphBuilder().setInputTypes(InputType.convolutional(8, 8, 13))
 
@@ -98,12 +100,75 @@ class ResidualNetworkBuilder(
                 .nOut(2)
                 .build(), convName)
         conf.addLayer(actName, ActivationLayer.Builder()
-                // todo try changing to Softmax instead
                 .activation(Activation.SOFTMAX)
                 .build(), bnName)
         conf.addLayer(denseName, OutputLayer.Builder()
                 // number inputs: two planes with size 8x8
                 .nIn(2 * 8 * 8).nOut(63 * 64)
+                .build(), actName)
+
+        val preProcessorMap = hashMapOf<String, InputPreProcessor>(
+                denseName to CnnToFeedForwardPreProcessor(8, 8, 2)
+        )
+        conf.inputPreProcessors = preProcessorMap
+        return denseName
+    }
+
+    // This output decides from which square piece should be moved
+    fun addFromPolicyHead(inName: String): String {
+        val convName = "from_policy_head_conv_"
+        val bnName = "from_policy_head_batch_norm_"
+        val actName = "from_policy_head_relu_"
+        val denseName = "from_policy_head_output_"
+
+        conf.addLayer(convName, ConvolutionLayer.Builder()
+                .kernelSize(*kernel)
+                .stride(*strides)
+                .convolutionMode(convolutionMode)
+                // reducing convolutions to 2 planes - one for starting position, one for where to move
+                .nOut(2).nIn(256)
+                .build(), inName)
+        conf.addLayer(bnName, BatchNormalization.Builder()
+                .nOut(2)
+                .build(), convName)
+        conf.addLayer(actName, ActivationLayer.Builder()
+                .activation(Activation.SOFTMAX)
+                .build(), bnName)
+        conf.addLayer(denseName, OutputLayer.Builder()
+                // number inputs: two planes with size 8x8
+                .nIn(2 * 8 * 8).nOut(64)
+                .build(), actName)
+
+        val preProcessorMap = hashMapOf<String, InputPreProcessor>(
+                denseName to CnnToFeedForwardPreProcessor(8, 8, 2)
+        )
+        conf.inputPreProcessors = preProcessorMap
+        return denseName
+    }
+
+    // This output decides from which to square piece should be moved
+    fun addToPolicyHead(inName: String): String {
+        val convName = "to_policy_head_conv_"
+        val bnName = "to_policy_head_batch_norm_"
+        val actName = "to_policy_head_relu_"
+        val denseName = "to_policy_head_output_"
+
+        conf.addLayer(convName, ConvolutionLayer.Builder()
+                .kernelSize(*kernel)
+                .stride(*strides)
+                .convolutionMode(convolutionMode)
+                // reducing convolutions to 2 planes - one for starting position, one for where to move
+                .nOut(2).nIn(256)
+                .build(), inName)
+        conf.addLayer(bnName, BatchNormalization.Builder()
+                .nOut(2)
+                .build(), convName)
+        conf.addLayer(actName, ActivationLayer.Builder()
+                .activation(Activation.SOFTMAX)
+                .build(), bnName)
+        conf.addLayer(denseName, OutputLayer.Builder()
+                // number inputs: two planes with size 8x8
+                .nIn(2 * 8 * 8).nOut(64)
                 .build(), actName)
 
         val preProcessorMap = hashMapOf<String, InputPreProcessor>(
