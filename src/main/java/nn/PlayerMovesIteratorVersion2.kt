@@ -14,7 +14,7 @@ class PlayerMovesIteratorVersion2(private val filePath: String, val batchSize: I
     private val file = File(filePath)
     private var fileIterator = FileUtils.lineIterator(file)
     private val totalExamples: Int
-    private val squares = arrayOfNulls<Square>(64).apply {
+    val squares = arrayOfNulls<Square>(64).apply {
         var i = 0
         Square.values().forEach { sq ->
             if (sq != Square.NONE) {

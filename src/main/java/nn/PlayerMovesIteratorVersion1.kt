@@ -2,13 +2,11 @@ package nn
 
 import com.github.bhlangonijr.chesslib.*
 import org.apache.commons.io.FileUtils
-import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 import java.io.File
 
-class PlayerMovesIteratorVersion1(private val filePath: String, val batchSize: Int) : DataSetIterator {
+class PlayerMovesIteratorVersion1(private val filePath: String, val batchSize: Int) {
 
     private var cursor = 1
     private val file = File(filePath)
@@ -31,21 +29,6 @@ class PlayerMovesIteratorVersion1(private val filePath: String, val batchSize: I
         println("total examples: $totalExamples")
     }
 
-    override fun resetSupported(): Boolean {
-        return true
-    }
-
-    override fun getLabels(): MutableList<String> {
-        return ArrayList()
-    }
-
-    override fun remove() {
-    }
-
-    override fun inputColumns(): Int = 13
-
-    override fun batch(): Int = batchSize
-
     private val figureTypes = setOf(
             Piece.WHITE_PAWN,
             Piece.WHITE_KNIGHT,
@@ -63,19 +46,21 @@ class PlayerMovesIteratorVersion1(private val filePath: String, val batchSize: I
 
     private val letterToNumber = hashMapOf("A" to 0, "B" to 1, "C" to 2, "D" to 3, "E" to 4, "F" to 5, "G" to 6, "H" to 7)
 
-    override fun next(n: Int): DataSet {
+    fun next(n: Int): Array<Any> {
         val features = Nd4j.zeros(n, 13, 8, 8)
 
         // 64 * 63 - all possible move combination between two squares
         // pawn promotion are not taken into consideration
         // no turn counter, no move repetition counter etc..
         val labels = Nd4j.zeros(n, 64 * 63)
+        val fens = Array(n) { "" }
 
         for (example in 0 until n) {
             this.cursor++
             val line = fileIterator.nextLine().split(",")
             val color = line[1]
             val fen = line[2]
+            fens[example] = fen
             val move = line[3].substring(0, 4).toUpperCase()
             val board = Board()
             board.loadFromFen(fen)
@@ -95,27 +80,15 @@ class PlayerMovesIteratorVersion1(private val filePath: String, val batchSize: I
             }
             labels.putScalar(intArrayOf(example, moves.indexOf(move)), 1)
         }
-        return DataSet(features, labels)
+
+        return arrayOf(features, labels, fens)
     }
 
-    override fun next(): DataSet = next(batchSize)
+    fun next(): Array<Any> = next(batchSize)
 
-    override fun totalOutcomes(): Int = 4096
-
-    override fun setPreProcessor(p0: DataSetPreProcessor?) {
-    }
-
-    override fun reset() {
+    fun reset() {
         fileIterator = FileUtils.lineIterator(file)
     }
 
-    override fun hasNext(): Boolean = cursor < (totalExamples - batchSize)
-
-    override fun asyncSupported(): Boolean {
-        return true
-    }
-
-    override fun getPreProcessor(): DataSetPreProcessor {
-        throw UnsupportedOperationException("Not implemented")
-    }
+    fun hasNext(): Boolean = cursor < (totalExamples - batchSize)
 }
